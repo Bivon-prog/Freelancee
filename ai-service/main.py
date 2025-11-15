@@ -51,35 +51,110 @@ async def health():
 
 @app.post("/api/ai/generate-content")
 async def generate_content(request: ContentGenerationRequest):
-    # TODO: Implement OpenAI integration
-    return {
-        "content": f"Generated {request.type} content based on: {request.prompt}",
-        "tokens_used": 0
-    }
+    try:
+        from openai import OpenAI
+        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        
+        system_prompts = {
+            "blog": "You are a professional blog writer. Create engaging, well-structured blog posts.",
+            "email": "You are a professional email writer. Create clear, concise, and professional emails.",
+            "social": "You are a social media expert. Create engaging, catchy social media posts.",
+            "marketing": "You are a marketing copywriter. Create persuasive marketing content.",
+            "essay": "You are an academic writer. Create well-researched, structured essays.",
+        }
+        
+        system_prompt = system_prompts.get(request.type, "You are a helpful writing assistant.")
+        
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": f"{system_prompt} Write in a {request.tone} tone. Length: {request.length}."},
+                {"role": "user", "content": request.prompt}
+            ],
+            temperature=0.7,
+            max_tokens=1500
+        )
+        
+        return {
+            "content": response.choices[0].message.content,
+            "tokens_used": response.usage.total_tokens
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/ai/check-grammar")
 async def check_grammar(request: GrammarCheckRequest):
-    # TODO: Implement grammar checking
-    return {
-        "corrected_text": request.text,
-        "errors": [],
-        "suggestions": []
-    }
+    try:
+        from openai import OpenAI
+        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": "You are a grammar expert. Check and correct grammar, spelling, and punctuation. Return the corrected text and list any errors found."},
+                {"role": "user", "content": f"Check this text for errors:\n\n{request.text}"}
+            ],
+            temperature=0.3
+        )
+        
+        return {
+            "corrected_text": response.choices[0].message.content,
+            "errors": [],
+            "suggestions": []
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/ai/rewrite")
 async def rewrite_text(request: RewriteRequest):
-    # TODO: Implement text rewriting
-    return {
-        "rewritten_text": request.text,
-        "tone": request.tone
-    }
+    try:
+        from openai import OpenAI
+        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": f"You are a writing expert. Rewrite the following text in a {request.tone} tone while maintaining the core message."},
+                {"role": "user", "content": request.text}
+            ],
+            temperature=0.7
+        )
+        
+        return {
+            "rewritten_text": response.choices[0].message.content,
+            "tone": request.tone
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/ai/summarize")
 async def summarize_text(request: SummarizeRequest):
-    # TODO: Implement summarization
-    return {
-        "summary": f"Summary of the text (length: {request.length})"
-    }
+    try:
+        from openai import OpenAI
+        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        
+        length_instructions = {
+            "short": "in 2-3 sentences",
+            "medium": "in 1-2 paragraphs",
+            "long": "in 3-4 paragraphs with key points"
+        }
+        
+        instruction = length_instructions.get(request.length, "concisely")
+        
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": f"You are a summarization expert. Summarize the following text {instruction}."},
+                {"role": "user", "content": request.text}
+            ],
+            temperature=0.5
+        )
+        
+        return {
+            "summary": response.choices[0].message.content
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/ai/optimize-resume")
 async def optimize_resume(request: ResumeOptimizeRequest):

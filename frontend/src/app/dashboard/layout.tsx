@@ -71,6 +71,11 @@ export default function DashboardLayout({
               <span className="font-medium">Settings</span>
             </Link>
             <button
+              onClick={() => {
+                localStorage.removeItem('token')
+                localStorage.removeItem('user')
+                window.location.href = '/auth/login'
+              }}
               className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100"
             >
               <LogOut className="w-5 h-5" />

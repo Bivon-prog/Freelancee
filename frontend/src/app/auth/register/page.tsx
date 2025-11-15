@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { authApi } from '@/lib/api'
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -10,17 +11,22 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+    setLoading(true)
     
     try {
-      // TODO: Implement actual registration
-      console.log('Register:', { name, email, password })
+      const response = await authApi.register(name, email, password)
+      localStorage.setItem('token', response.data.token)
+      localStorage.setItem('user', JSON.stringify(response.data.user))
       router.push('/dashboard')
-    } catch (err) {
-      setError('Registration failed')
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Registration failed')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -87,9 +93,10 @@ export default function RegisterPage() {
 
           <button
             type="submit"
-            className="w-full bg-primary-600 text-white py-3 rounded-lg font-semibold hover:bg-primary-700 transition-colors"
+            disabled={loading}
+            className="w-full bg-primary-600 text-white py-3 rounded-lg font-semibold hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Create Account
+            {loading ? 'Creating Account...' : 'Create Account'}
           </button>
         </form>
 
