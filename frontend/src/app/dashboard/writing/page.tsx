@@ -1,7 +1,7 @@
 'use client'
 
-import { PenTool, Sparkles } from 'lucide-react'
-
+import { useState } from 'react'
+import { PenTool, Sparkles, Fil
 export default function WritingPage() {
   return (
     <div>
