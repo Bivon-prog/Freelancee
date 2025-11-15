@@ -66,10 +66,12 @@ CREATE TABLE IF NOT EXISTS invoices (
   items JSONB NOT NULL,
   subtotal DECIMAL(10, 2) NOT NULL,
   tax DECIMAL(10, 2) DEFAULT 0,
+  discount DECIMAL(10, 2) DEFAULT 0,
   total DECIMAL(10, 2) NOT NULL,
   currency VARCHAR(10) DEFAULT 'USD',
   status VARCHAR(50) DEFAULT 'draft',
   notes TEXT,
+  payment_terms TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
