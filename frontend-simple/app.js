@@ -1297,10 +1297,10 @@ async function loadResumes() {
                 <div class="list-item">
                     <div class="item-info">
                         <h3>${resume.title}</h3>
-                        <p>${resume.name} • Updated: ${new Date(resume.updated_at).toLocaleDateString()}</p>
+                        <p>${resume.personal_info.full_name} • ${resume.template} template • Updated: ${new Date(resume.updated_at).toLocaleDateString()}</p>
                     </div>
                     <div class="item-actions">
-                        <button class="btn btn-small btn-primary" onclick="editResume('${resumeId}')">Edit</button>
+                        <button class="btn btn-small btn-primary" onclick="viewResume('${resumeId}')">Preview</button>
                         <button class="btn btn-small btn-secondary" onclick="downloadResume('${resumeId}')">Download PDF</button>
                     </div>
                 </div>
@@ -1317,6 +1317,17 @@ function showCreateResumeModal() {
             <div class="form-group">
                 <label>Resume Title</label>
                 <input type="text" id="resume-title" class="form-control" placeholder="e.g., Software Developer Resume" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Template Style</label>
+                <select id="resume-template" class="form-control">
+                    <option value="modern">Modern - Clean and professional</option>
+                    <option value="classic">Classic - Traditional format</option>
+                    <option value="creative">Creative - Bold and colorful</option>
+                    <option value="minimal">Minimal - Simple and elegant</option>
+                    <option value="executive">Executive - Senior professional</option>
+                </select>
             </div>
             
             <div class="resume-section">
@@ -1336,16 +1347,68 @@ function showCreateResumeModal() {
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>Professional Summary</label>
-                    <textarea id="resume-summary" class="form-control" rows="3"></textarea>
+                    <label>Location</label>
+                    <input type="text" id="resume-location" class="form-control" placeholder="City, Country">
                 </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Website</label>
+                        <input type="url" id="resume-website" class="form-control" placeholder="https://yourwebsite.com">
+                    </div>
+                    <div class="form-group">
+                        <label>LinkedIn</label>
+                        <input type="url" id="resume-linkedin" class="form-control" placeholder="https://linkedin.com/in/yourprofile">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>GitHub</label>
+                    <input type="url" id="resume-github" class="form-control" placeholder="https://github.com/yourusername">
+                </div>
+                <div class="form-group">
+                    <label>Professional Summary</label>
+                    <textarea id="resume-summary" class="form-control" rows="3" placeholder="Brief overview of your professional background"></textarea>
+                </div>
+            </div>
+            
+            <div class="resume-section">
+                <h4>Work Experience</h4>
+                <div id="experience-list">
+                    <div class="experience-item">
+                        <input type="text" placeholder="Job Title" class="form-control exp-title" required>
+                        <input type="text" placeholder="Company" class="form-control exp-company" required>
+                        <input type="text" placeholder="Location (optional)" class="form-control exp-location">
+                        <div class="form-row">
+                            <input type="text" placeholder="Start Date (e.g., Jan 2020)" class="form-control exp-start">
+                            <input type="text" placeholder="End Date (or Present)" class="form-control exp-end">
+                        </div>
+                        <textarea placeholder="Responsibilities and achievements" class="form-control exp-desc" rows="3"></textarea>
+                    </div>
+                </div>
+                <button type="button" class="btn-add" onclick="addExperience()">+ Add Experience</button>
+            </div>
+            
+            <div class="resume-section">
+                <h4>Education</h4>
+                <div id="education-list">
+                    <div class="education-item">
+                        <input type="text" placeholder="Degree" class="form-control edu-degree" required>
+                        <input type="text" placeholder="Field of Study" class="form-control edu-field" required>
+                        <input type="text" placeholder="Institution" class="form-control edu-school" required>
+                        <div class="form-row">
+                            <input type="text" placeholder="Start Year" class="form-control edu-start">
+                            <input type="text" placeholder="End Year (or Expected)" class="form-control edu-year">
+                        </div>
+                        <input type="text" placeholder="GPA (optional)" class="form-control edu-gpa">
+                    </div>
+                </div>
+                <button type="button" class="btn-add" onclick="addEducation()">+ Add Education</button>
             </div>
             
             <div class="resume-section">
                 <h4>Skills</h4>
                 <div class="form-group">
                     <label>Skills (comma-separated)</label>
-                    <input type="text" id="resume-skills" class="form-control" placeholder="JavaScript, React, Node.js">
+                    <input type="text" id="resume-skills" class="form-control" placeholder="JavaScript, React, Node.js, Python">
                 </div>
             </div>
             
@@ -1356,19 +1419,97 @@ function showCreateResumeModal() {
     document.getElementById('create-resume-form').addEventListener('submit', createResume);
 }
 
+function addExperience() {
+    const list = document.getElementById('experience-list');
+    const item = document.createElement('div');
+    item.className = 'experience-item';
+    item.innerHTML = `
+        <input type="text" placeholder="Job Title" class="form-control exp-title" required>
+        <input type="text" placeholder="Company" class="form-control exp-company" required>
+        <input type="text" placeholder="Location (optional)" class="form-control exp-location">
+        <div class="form-row">
+            <input type="text" placeholder="Start Date" class="form-control exp-start">
+            <input type="text" placeholder="End Date" class="form-control exp-end">
+        </div>
+        <textarea placeholder="Responsibilities" class="form-control exp-desc" rows="3"></textarea>
+        <button type="button" class="btn-remove" onclick="this.parentElement.remove()">Remove</button>
+    `;
+    list.appendChild(item);
+}
+
+function addEducation() {
+    const list = document.getElementById('education-list');
+    const item = document.createElement('div');
+    item.className = 'education-item';
+    item.innerHTML = `
+        <input type="text" placeholder="Degree" class="form-control edu-degree" required>
+        <input type="text" placeholder="Field of Study" class="form-control edu-field" required>
+        <input type="text" placeholder="Institution" class="form-control edu-school" required>
+        <div class="form-row">
+            <input type="text" placeholder="Start Year" class="form-control edu-start">
+            <input type="text" placeholder="End Year" class="form-control edu-year">
+        </div>
+        <input type="text" placeholder="GPA (optional)" class="form-control edu-gpa">
+        <button type="button" class="btn-remove" onclick="this.parentElement.remove()">Remove</button>
+    `;
+    list.appendChild(item);
+}
+
 async function createResume(e) {
     e.preventDefault();
     
     try {
+        // Collect work experience
+        const experience = [];
+        document.querySelectorAll('.experience-item').forEach(item => {
+            const position = item.querySelector('.exp-title')?.value;
+            if (position) {
+                experience.push({
+                    position: position,
+                    company: item.querySelector('.exp-company').value,
+                    location: item.querySelector('.exp-location')?.value || null,
+                    start_date: item.querySelector('.exp-start').value,
+                    end_date: item.querySelector('.exp-end').value || null,
+                    description: item.querySelector('.exp-desc').value,
+                    achievements: []
+                });
+            }
+        });
+        
+        // Collect education
+        const education = [];
+        document.querySelectorAll('.education-item').forEach(item => {
+            const degree = item.querySelector('.edu-degree')?.value;
+            if (degree) {
+                education.push({
+                    degree: degree,
+                    institution: item.querySelector('.edu-school').value,
+                    field: item.querySelector('.edu-field')?.value || '',
+                    start_date: item.querySelector('.edu-start')?.value || '',
+                    end_date: item.querySelector('.edu-year').value || null,
+                    gpa: item.querySelector('.edu-gpa').value || null
+                });
+            }
+        });
+        
         await apiRequest('/resumes', {
             method: 'POST',
             body: JSON.stringify({
                 title: document.getElementById('resume-title').value,
-                name: document.getElementById('resume-name').value,
-                email: document.getElementById('resume-email').value,
-                phone: document.getElementById('resume-phone').value,
+                personal_info: {
+                    full_name: document.getElementById('resume-name').value,
+                    email: document.getElementById('resume-email').value,
+                    phone: document.getElementById('resume-phone').value,
+                    location: document.getElementById('resume-location').value,
+                    website: document.getElementById('resume-website')?.value || null,
+                    linkedin: document.getElementById('resume-linkedin')?.value || null,
+                    github: document.getElementById('resume-github')?.value || null
+                },
                 summary: document.getElementById('resume-summary').value,
-                skills: document.getElementById('resume-skills').value.split(',').map(s => s.trim())
+                skills: document.getElementById('resume-skills').value.split(',').map(s => s.trim()).filter(s => s),
+                experience: experience,
+                education: education,
+                template: document.getElementById('resume-template')?.value || 'modern'
             })
         });
         closeModal();
@@ -1378,8 +1519,291 @@ async function createResume(e) {
     }
 }
 
-function editResume(id) { alert('Edit resume: ' + id); }
-function downloadResume(id) { alert('Download resume PDF: ' + id); }
+async function viewResume(id) {
+    try {
+        const resume = await apiRequest(`/resumes/${id}`);
+        const modal = createModal('Resume Preview', generateResumeHTML(resume), 'large');
+    } catch (error) {
+        alert('Error loading resume: ' + error.message);
+    }
+}
+
+function generateResumeHTML(resume) {
+    const template = resume.template || 'modern';
+    const templates = {
+        modern: generateModernTemplate(resume),
+        classic: generateClassicTemplate(resume),
+        creative: generateCreativeTemplate(resume),
+        minimal: generateMinimalTemplate(resume),
+        executive: generateExecutiveTemplate(resume)
+    };
+    
+    return `
+        <div class="resume-preview ${template}-template">
+            ${templates[template] || templates.modern}
+        </div>
+        <div style="margin-top: 20px; text-align: center;">
+            <button class="btn btn-primary" onclick="downloadResumePDF('${extractId(resume._id)}')">Download PDF</button>
+            <button class="btn btn-secondary" onclick="closeModal()">Close</button>
+        </div>
+    `;
+}
+
+function generateModernTemplate(r) {
+    return `
+        <div class="resume-content modern">
+            <div class="resume-header">
+                <h1>${r.personal_info.full_name}</h1>
+                <div class="contact-info">
+                    ${r.personal_info.email} ${r.personal_info.phone ? '• ' + r.personal_info.phone : ''}
+                    ${r.personal_info.location ? '• ' + r.personal_info.location : ''}
+                </div>
+                ${r.personal_info.linkedin || r.personal_info.github || r.personal_info.website ? `
+                    <div class="links">
+                        ${r.personal_info.linkedin ? `<a href="${r.personal_info.linkedin}">LinkedIn</a>` : ''}
+                        ${r.personal_info.github ? `<a href="${r.personal_info.github}">GitHub</a>` : ''}
+                        ${r.personal_info.website ? `<a href="${r.personal_info.website}">Website</a>` : ''}
+                    </div>
+                ` : ''}
+            </div>
+            
+            ${r.summary ? `
+                <div class="resume-section">
+                    <h2>Professional Summary</h2>
+                    <p>${r.summary}</p>
+                </div>
+            ` : ''}
+            
+            ${r.experience && r.experience.length > 0 ? `
+                <div class="resume-section">
+                    <h2>Work Experience</h2>
+                    ${r.experience.map(exp => `
+                        <div class="experience-entry">
+                            <div class="entry-header">
+                                <h3>${exp.position}</h3>
+                                <span class="date">${exp.start_date} - ${exp.end_date || 'Present'}</span>
+                            </div>
+                            <div class="company">${exp.company}${exp.location ? ' • ' + exp.location : ''}</div>
+                            <p>${exp.description}</p>
+                        </div>
+                    `).join('')}
+                </div>
+            ` : ''}
+            
+            ${r.education && r.education.length > 0 ? `
+                <div class="resume-section">
+                    <h2>Education</h2>
+                    ${r.education.map(edu => `
+                        <div class="education-entry">
+                            <div class="entry-header">
+                                <h3>${edu.degree} in ${edu.field}</h3>
+                                <span class="date">${edu.end_date || edu.start_date}</span>
+                            </div>
+                            <div class="institution">${edu.institution}</div>
+                            ${edu.gpa ? `<div class="gpa">GPA: ${edu.gpa}</div>` : ''}
+                        </div>
+                    `).join('')}
+                </div>
+            ` : ''}
+            
+            ${r.skills && r.skills.length > 0 ? `
+                <div class="resume-section">
+                    <h2>Skills</h2>
+                    <div class="skills-list">
+                        ${r.skills.map(skill => `<span class="skill-tag">${skill}</span>`).join('')}
+                    </div>
+                </div>
+            ` : ''}
+        </div>
+    `;
+}
+
+function generateClassicTemplate(r) {
+    return `
+        <div class="resume-content classic">
+            <div class="resume-header">
+                <h1>${r.personal_info.full_name}</h1>
+                <div class="contact-line">
+                    ${r.personal_info.email} | ${r.personal_info.phone || ''} | ${r.personal_info.location || ''}
+                </div>
+            </div>
+            
+            ${r.summary ? `<div class="section"><strong>OBJECTIVE</strong><p>${r.summary}</p></div>` : ''}
+            
+            ${r.experience && r.experience.length > 0 ? `
+                <div class="section">
+                    <strong>EXPERIENCE</strong>
+                    ${r.experience.map(exp => `
+                        <div class="entry">
+                            <div><strong>${exp.position}</strong> - ${exp.company}</div>
+                            <div><em>${exp.start_date} - ${exp.end_date || 'Present'}</em></div>
+                            <p>${exp.description}</p>
+                        </div>
+                    `).join('')}
+                </div>
+            ` : ''}
+            
+            ${r.education && r.education.length > 0 ? `
+                <div class="section">
+                    <strong>EDUCATION</strong>
+                    ${r.education.map(edu => `
+                        <div class="entry">
+                            <div><strong>${edu.degree}</strong> in ${edu.field}</div>
+                            <div>${edu.institution} - ${edu.end_date || edu.start_date}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            ` : ''}
+            
+            ${r.skills && r.skills.length > 0 ? `
+                <div class="section">
+                    <strong>SKILLS</strong>
+                    <p>${r.skills.join(', ')}</p>
+                </div>
+            ` : ''}
+        </div>
+    `;
+}
+
+function generateCreativeTemplate(r) {
+    return `
+        <div class="resume-content creative">
+            <div class="sidebar">
+                <h1>${r.personal_info.full_name}</h1>
+                <div class="contact">
+                    <p>${r.personal_info.email}</p>
+                    <p>${r.personal_info.phone || ''}</p>
+                    <p>${r.personal_info.location || ''}</p>
+                </div>
+                ${r.skills && r.skills.length > 0 ? `
+                    <div class="skills-sidebar">
+                        <h3>Skills</h3>
+                        ${r.skills.map(skill => `<div class="skill-item">${skill}</div>`).join('')}
+                    </div>
+                ` : ''}
+            </div>
+            <div class="main-content">
+                ${r.summary ? `<div class="summary-box"><h3>About Me</h3><p>${r.summary}</p></div>` : ''}
+                
+                ${r.experience && r.experience.length > 0 ? `
+                    <h2>Experience</h2>
+                    ${r.experience.map(exp => `
+                        <div class="exp-card">
+                            <h3>${exp.position}</h3>
+                            <div class="meta">${exp.company} | ${exp.start_date} - ${exp.end_date || 'Present'}</div>
+                            <p>${exp.description}</p>
+                        </div>
+                    `).join('')}
+                ` : ''}
+                
+                ${r.education && r.education.length > 0 ? `
+                    <h2>Education</h2>
+                    ${r.education.map(edu => `
+                        <div class="edu-card">
+                            <h3>${edu.degree} in ${edu.field}</h3>
+                            <div class="meta">${edu.institution} | ${edu.end_date || edu.start_date}</div>
+                        </div>
+                    `).join('')}
+                ` : ''}
+            </div>
+        </div>
+    `;
+}
+
+function generateMinimalTemplate(r) {
+    return `
+        <div class="resume-content minimal">
+            <h1>${r.personal_info.full_name}</h1>
+            <div class="contact-minimal">${r.personal_info.email} • ${r.personal_info.phone || ''}</div>
+            
+            ${r.summary ? `<p class="summary-minimal">${r.summary}</p>` : ''}
+            
+            ${r.experience && r.experience.length > 0 ? `
+                <h2>Experience</h2>
+                ${r.experience.map(exp => `
+                    <div class="minimal-entry">
+                        <div class="minimal-header">${exp.position}, ${exp.company} <span>${exp.start_date} - ${exp.end_date || 'Present'}</span></div>
+                        <p>${exp.description}</p>
+                    </div>
+                `).join('')}
+            ` : ''}
+            
+            ${r.education && r.education.length > 0 ? `
+                <h2>Education</h2>
+                ${r.education.map(edu => `
+                    <div class="minimal-entry">
+                        <div class="minimal-header">${edu.degree} in ${edu.field}, ${edu.institution} <span>${edu.end_date || edu.start_date}</span></div>
+                    </div>
+                `).join('')}
+            ` : ''}
+            
+            ${r.skills && r.skills.length > 0 ? `
+                <h2>Skills</h2>
+                <p>${r.skills.join(' • ')}</p>
+            ` : ''}
+        </div>
+    `;
+}
+
+function generateExecutiveTemplate(r) {
+    return `
+        <div class="resume-content executive">
+            <div class="exec-header">
+                <h1>${r.personal_info.full_name}</h1>
+                <div class="exec-contact">
+                    ${r.personal_info.email} | ${r.personal_info.phone || ''} | ${r.personal_info.location || ''}
+                </div>
+            </div>
+            
+            ${r.summary ? `
+                <div class="exec-summary">
+                    <h2>Executive Summary</h2>
+                    <p>${r.summary}</p>
+                </div>
+            ` : ''}
+            
+            ${r.experience && r.experience.length > 0 ? `
+                <div class="exec-section">
+                    <h2>Professional Experience</h2>
+                    ${r.experience.map(exp => `
+                        <div class="exec-entry">
+                            <div class="exec-title">${exp.position}</div>
+                            <div class="exec-org">${exp.company} | ${exp.start_date} - ${exp.end_date || 'Present'}</div>
+                            <p>${exp.description}</p>
+                        </div>
+                    `).join('')}
+                </div>
+            ` : ''}
+            
+            ${r.education && r.education.length > 0 ? `
+                <div class="exec-section">
+                    <h2>Education & Credentials</h2>
+                    ${r.education.map(edu => `
+                        <div class="exec-entry">
+                            <div class="exec-title">${edu.degree} in ${edu.field}</div>
+                            <div class="exec-org">${edu.institution} | ${edu.end_date || edu.start_date}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            ` : ''}
+            
+            ${r.skills && r.skills.length > 0 ? `
+                <div class="exec-section">
+                    <h2>Core Competencies</h2>
+                    <div class="exec-skills">${r.skills.join(' • ')}</div>
+                </div>
+            ` : ''}
+        </div>
+    `;
+}
+
+function downloadResumePDF(id) {
+    alert('PDF download will be implemented with a PDF generation library. Resume ID: ' + id);
+}
+
+function downloadResume(id) {
+    downloadResumePDF(id);
+}
 
 // TOOL 6: Resume Optimizer
 async function optimizeResume() {
@@ -1456,10 +1880,10 @@ function displayOptimizationResults(data) {
 }
 
 // Modal Helper
-function createModal(title, content) {
+function createModal(title, content, size = 'normal') {
     const modalContainer = document.getElementById('modal-container');
     modalContainer.innerHTML = `
-        <div class="modal">
+        <div class="modal ${size}">
             <div class="modal-content">
                 <div class="modal-header">
                     <h3>${title}</h3>

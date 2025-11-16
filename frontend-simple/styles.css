@@ -986,3 +986,347 @@ body {
     background: #fee2e2;
     color: #991b1b;
 }
+
+/* Resume Builder Styles */
+.resume-form .resume-section {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.resume-form .resume-section h4 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #2c3e50;
+}
+
+.experience-item, .education-item {
+    background: white;
+    padding: 15px;
+    border-radius: 6px;
+    margin-bottom: 15px;
+    border: 1px solid #e0e0e0;
+}
+
+.experience-item input, .education-item input,
+.experience-item textarea, .education-item textarea {
+    margin-bottom: 10px;
+}
+
+.btn-add {
+    background: #3498db;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.btn-add:hover {
+    background: #2980b9;
+}
+
+.btn-remove {
+    background: #e74c3c;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    margin-top: 10px;
+}
+
+.btn-remove:hover {
+    background: #c0392b;
+}
+
+/* Resume Preview Styles */
+.resume-preview {
+    background: white;
+    padding: 40px;
+    max-width: 800px;
+    margin: 0 auto;
+    box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.resume-content h1 {
+    margin: 0 0 10px 0;
+    font-size: 32px;
+    color: #2c3e50;
+}
+
+.resume-content h2 {
+    font-size: 20px;
+    color: #34495e;
+    border-bottom: 2px solid #3498db;
+    padding-bottom: 5px;
+    margin: 25px 0 15px 0;
+}
+
+.resume-content h3 {
+    font-size: 16px;
+    margin: 0 0 5px 0;
+    color: #2c3e50;
+}
+
+/* Modern Template */
+.modern .resume-header {
+    text-align: center;
+    border-bottom: 3px solid #3498db;
+    padding-bottom: 20px;
+    margin-bottom: 30px;
+}
+
+.modern .contact-info {
+    color: #7f8c8d;
+    margin: 10px 0;
+}
+
+.modern .links a {
+    color: #3498db;
+    text-decoration: none;
+    margin: 0 10px;
+}
+
+.modern .experience-entry, .modern .education-entry {
+    margin-bottom: 20px;
+}
+
+.modern .entry-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+}
+
+.modern .date {
+    color: #7f8c8d;
+    font-size: 14px;
+}
+
+.modern .company, .modern .institution {
+    color: #7f8c8d;
+    margin-bottom: 8px;
+}
+
+.modern .skills-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.modern .skill-tag {
+    background: #ecf0f1;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 14px;
+    color: #2c3e50;
+}
+
+/* Classic Template */
+.classic .resume-header {
+    text-align: center;
+    border-bottom: 2px solid #000;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+.classic .contact-line {
+    font-size: 14px;
+    margin-top: 5px;
+}
+
+.classic .section {
+    margin-bottom: 20px;
+}
+
+.classic .section strong {
+    display: block;
+    font-size: 16px;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    border-bottom: 1px solid #000;
+    padding-bottom: 3px;
+}
+
+.classic .entry {
+    margin-bottom: 15px;
+}
+
+/* Creative Template */
+.creative {
+    display: flex;
+    gap: 0;
+}
+
+.creative .sidebar {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 30px 20px;
+    width: 250px;
+    flex-shrink: 0;
+}
+
+.creative .sidebar h1 {
+    color: white;
+    font-size: 24px;
+    margin-bottom: 20px;
+}
+
+.creative .contact p {
+    margin: 5px 0;
+    font-size: 13px;
+}
+
+.creative .skills-sidebar {
+    margin-top: 30px;
+}
+
+.creative .skills-sidebar h3 {
+    color: white;
+    font-size: 16px;
+    margin-bottom: 10px;
+}
+
+.creative .skill-item {
+    background: rgba(255,255,255,0.2);
+    padding: 6px 10px;
+    border-radius: 4px;
+    margin-bottom: 8px;
+    font-size: 13px;
+}
+
+.creative .main-content {
+    flex: 1;
+    padding: 30px;
+}
+
+.creative .summary-box {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 25px;
+}
+
+.creative .exp-card, .creative .edu-card {
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.creative .meta {
+    color: #7f8c8d;
+    font-size: 14px;
+    margin: 5px 0;
+}
+
+/* Minimal Template */
+.minimal h1 {
+    font-size: 28px;
+    font-weight: 300;
+    margin-bottom: 5px;
+}
+
+.minimal .contact-minimal {
+    color: #7f8c8d;
+    font-size: 14px;
+    margin-bottom: 20px;
+}
+
+.minimal .summary-minimal {
+    font-size: 15px;
+    line-height: 1.6;
+    color: #555;
+    margin-bottom: 25px;
+}
+
+.minimal h2 {
+    font-size: 16px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 1px solid #ddd;
+    margin: 20px 0 15px 0;
+}
+
+.minimal .minimal-entry {
+    margin-bottom: 15px;
+}
+
+.minimal .minimal-header {
+    display: flex;
+    justify-content: space-between;
+    font-weight: 500;
+    margin-bottom: 5px;
+}
+
+.minimal .minimal-header span {
+    color: #7f8c8d;
+    font-weight: 400;
+}
+
+/* Executive Template */
+.executive .exec-header {
+    background: #2c3e50;
+    color: white;
+    padding: 30px;
+    margin: -40px -40px 30px -40px;
+}
+
+.executive .exec-header h1 {
+    color: white;
+    margin-bottom: 10px;
+}
+
+.executive .exec-contact {
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+.executive .exec-summary {
+    background: #ecf0f1;
+    padding: 20px;
+    border-left: 4px solid #3498db;
+    margin-bottom: 25px;
+}
+
+.executive .exec-summary h2 {
+    margin-top: 0;
+    border: none;
+}
+
+.executive .exec-section {
+    margin-bottom: 25px;
+}
+
+.executive .exec-entry {
+    margin-bottom: 20px;
+}
+
+.executive .exec-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 5px;
+}
+
+.executive .exec-org {
+    color: #7f8c8d;
+    font-size: 14px;
+    margin-bottom: 10px;
+}
+
+.executive .exec-skills {
+    font-size: 15px;
+    line-height: 1.8;
+}
+
+/* Large Modal for Resume Preview */
+.modal.large .modal-content {
+    max-width: 900px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
