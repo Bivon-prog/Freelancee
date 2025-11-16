@@ -776,3 +776,157 @@ body {
 .btn-edit:hover {
     background: #2563eb;
 }
+
+/* Invoice Enhancements */
+.invoice-calculations {
+    background: #f9fafb;
+    padding: 20px;
+    border-radius: 4px;
+    margin-top: 20px;
+}
+
+.calc-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.calc-row:last-child {
+    border-bottom: none;
+}
+
+.calc-row label {
+    font-weight: 500;
+    color: #374151;
+}
+
+.calc-row.total-row {
+    border-top: 2px solid #4f46e5;
+    margin-top: 10px;
+    padding-top: 15px;
+}
+
+.calc-row.total-row label {
+    font-size: 18px;
+    font-weight: bold;
+    color: #1f2937;
+}
+
+.calc-row.total-row span {
+    font-size: 24px;
+    font-weight: bold;
+    color: #4f46e5;
+}
+
+.form-control-small {
+    width: 100px;
+    padding: 6px 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    margin: 0 10px;
+}
+
+.form-control-small:focus {
+    outline: none;
+    border-color: #4f46e5;
+}
+
+/* Invoice View Modal */
+.invoice-view {
+    max-width: 700px;
+}
+
+.invoice-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+.invoice-details {
+    background: #f9fafb;
+    padding: 15px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+}
+
+.invoice-details p {
+    margin: 8px 0;
+    color: #374151;
+}
+
+.invoice-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+}
+
+.invoice-table th {
+    background: #f3f4f6;
+    padding: 12px;
+    text-align: left;
+    font-weight: 600;
+    color: #374151;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+.invoice-table td {
+    padding: 12px;
+    border-bottom: 1px solid #e5e7eb;
+    color: #6b7280;
+}
+
+.invoice-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.invoice-totals {
+    background: #f9fafb;
+    padding: 20px;
+    border-radius: 4px;
+    margin-top: 20px;
+}
+
+.total-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    color: #374151;
+}
+
+.total-row.total {
+    border-top: 2px solid #4f46e5;
+    margin-top: 10px;
+    padding-top: 15px;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.total-row.total span:last-child {
+    color: #4f46e5;
+    font-size: 24px;
+}
+
+.invoice-notes {
+    margin-top: 20px;
+    padding: 15px;
+    background: #fef3c7;
+    border-left: 4px solid #f59e0b;
+    border-radius: 4px;
+}
+
+.invoice-notes p {
+    margin: 0;
+    color: #92400e;
+}
+
+/* Status badges for invoices */
+.status-overdue {
+    background: #fee2e2;
+    color: #991b1b;
+}

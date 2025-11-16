@@ -131,6 +131,12 @@ function showSection(sectionName) {
     }
 }
 
+// Helper to extract MongoDB ObjectId as string
+function extractId(id) {
+    if (!id) return null;
+    return typeof id === 'object' ? id.$oid : id;
+}
+
 // API Helper
 async function apiRequest(endpoint, options = {}) {
     const headers = {
@@ -152,7 +158,22 @@ async function apiRequest(endpoint, options = {}) {
         throw new Error('Unauthorized');
     }
     
-    return response.json();
+    const text = await response.text();
+    
+    if (!response.ok) {
+        try {
+            const error = JSON.parse(text);
+            throw new Error(error.error || error.message || 'Request failed');
+        } catch (e) {
+            throw new Error(text || `Request failed with status ${response.status}`);
+        }
+    }
+    
+    try {
+        return JSON.parse(text);
+    } catch (e) {
+        throw new Error('Invalid JSON response from server');
+    }
 }
 
 // Dashboard Data Loading
@@ -194,28 +215,60 @@ async function loadInvoices() {
     container.innerHTML = '<div class="loading">Loading invoices...</div>';
     
     try {
+        console.log('Loading invoices...');
         const invoices = await apiRequest('/invoices');
+        console.log('Invoices loaded:', invoices);
         
         if (invoices.length === 0) {
             container.innerHTML = '<div class="empty-state">No invoices yet. Create your first invoice!</div>';
             return;
         }
         
-        container.innerHTML = invoices.map(invoice => `
-            <div class="list-item">
-                <div class="item-info">
-                    <h3>Invoice #${invoice.invoice_number}</h3>
-                    <p>Amount: $${invoice.total_amount} • Due: ${new Date(invoice.due_date).toLocaleDateString()}</p>
-                    <span class="status-badge status-${invoice.status}">${invoice.status}</span>
+        container.innerHTML = invoices.map(invoice => {
+            const statusClass = invoice.status === 'paid' ? 'status-paid' : 
+                               invoice.status === 'sent' ? 'status-pending' : 
+                               invoice.status === 'overdue' ? 'status-badge' : 'status-active';
+            const currency = invoice.currency || 'USD';
+            const symbol = currency === 'USD' ? '$' : currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : 'KSh';
+            const invoiceId = extractId(invoice._id);
+            
+            return `
+                <div class="list-item">
+                    <div class="item-info">
+                        <h3>Invoice #${invoice.invoice_number}</h3>
+                        <p>${symbol}${invoice.total} • Due: ${new Date(invoice.due_date).toLocaleDateString()}</p>
+                        <span class="status-badge ${statusClass}">${invoice.status}</span>
+                    </div>
+                    <div class="item-actions">
+                        <button class="btn btn-small btn-primary" onclick="viewInvoice('${invoiceId}')">View</button>
+                        <button class="btn btn-small btn-secondary" onclick="updateInvoiceStatus('${invoiceId}')">Update Status</button>
+                        <button class="btn btn-small btn-secondary" onclick="downloadInvoicePDF('${invoiceId}')">PDF</button>
+                        <button class="btn btn-small btn-secondary" onclick="emailInvoice('${invoiceId}')">Email</button>
+                    </div>
                 </div>
-                <div class="item-actions">
-                    <button class="btn btn-small btn-primary" onclick="viewInvoice('${invoice._id}')">View</button>
-                    <button class="btn btn-small btn-secondary" onclick="downloadInvoice('${invoice._id}')">Download PDF</button>
-                </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
     } catch (error) {
-        container.innerHTML = '<div class="empty-state">Error loading invoices</div>';
+        console.error('Error loading invoices:', error);
+        container.innerHTML = `
+            <div class="empty-state">
+                <p>Error loading invoices</p>
+                <p style="color: #666; font-size: 14px;">This might be due to old test data with invalid date formats.</p>
+                <button class="btn btn-secondary" onclick="clearInvoiceData()">Clear Invoice Data & Retry</button>
+            </div>
+        `;
+    }
+}
+
+async function clearInvoiceData() {
+    if (confirm('This will delete all invoices. Are you sure?')) {
+        try {
+            const invoices = await apiRequest('/invoices').catch(() => []);
+            // If we can't load them, we can't delete them individually
+            alert('Please clear the MongoDB invoices collection manually or contact support.');
+        } catch (error) {
+            alert('Unable to clear data. Please clear the MongoDB invoices collection manually.');
+        }
     }
 }
 
@@ -255,8 +308,46 @@ function showCreateInvoiceModal() {
                 </div>
                 <button type="button" class="btn-add" onclick="addInvoiceItem()">+ Add Item</button>
             </div>
-            <div class="invoice-total">
-                <h3>Total: $<span id="invoice-total-amount">0.00</span></h3>
+            <div class="invoice-calculations">
+                <div class="calc-row">
+                    <label>Subtotal:</label>
+                    <span id="invoice-subtotal">$0.00</span>
+                </div>
+                <div class="calc-row">
+                    <label>Tax (%):</label>
+                    <input type="number" id="invoice-tax" class="form-control-small" value="0" step="0.01" min="0" max="100">
+                    <span id="invoice-tax-amount">$0.00</span>
+                </div>
+                <div class="calc-row">
+                    <label>Discount ($):</label>
+                    <input type="number" id="invoice-discount" class="form-control-small" value="0" step="0.01" min="0">
+                </div>
+                <div class="calc-row total-row">
+                    <label>Total:</label>
+                    <span id="invoice-total-amount">$0.00</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Currency</label>
+                <select id="invoice-currency" class="form-control">
+                    <option value="USD">USD ($)</option>
+                    <option value="EUR">EUR (€)</option>
+                    <option value="GBP">GBP (£)</option>
+                    <option value="KES">KES (KSh)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Payment Terms</label>
+                <select id="invoice-payment-terms" class="form-control">
+                    <option value="Due on receipt">Due on receipt</option>
+                    <option value="Net 15">Net 15</option>
+                    <option value="Net 30" selected>Net 30</option>
+                    <option value="Net 60">Net 60</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Notes (Optional)</label>
+                <textarea id="invoice-notes" class="form-control" rows="3" placeholder="Thank you for your business!"></textarea>
             </div>
             <button type="submit" class="btn btn-primary">Create Invoice</button>
         </form>
@@ -266,6 +357,8 @@ function showCreateInvoiceModal() {
     document.querySelectorAll('.item-qty, .item-rate').forEach(input => {
         input.addEventListener('input', calculateInvoiceTotal);
     });
+    document.getElementById('invoice-tax').addEventListener('input', calculateInvoiceTotal);
+    document.getElementById('invoice-discount').addEventListener('input', calculateInvoiceTotal);
 }
 
 function addInvoiceItem() {
@@ -291,15 +384,28 @@ function removeInvoiceItem(btn) {
 }
 
 function calculateInvoiceTotal() {
-    let total = 0;
+    let subtotal = 0;
     document.querySelectorAll('.invoice-item').forEach(item => {
         const qty = parseFloat(item.querySelector('.item-qty').value) || 0;
         const rate = parseFloat(item.querySelector('.item-rate').value) || 0;
         const amount = qty * rate;
         item.querySelector('.item-amount').value = amount.toFixed(2);
-        total += amount;
+        subtotal += amount;
     });
-    document.getElementById('invoice-total-amount').textContent = total.toFixed(2);
+    
+    const taxPercent = parseFloat(document.getElementById('invoice-tax')?.value) || 0;
+    const discount = parseFloat(document.getElementById('invoice-discount')?.value) || 0;
+    
+    const taxAmount = (subtotal * taxPercent) / 100;
+    const total = subtotal + taxAmount - discount;
+    
+    if (document.getElementById('invoice-subtotal')) {
+        document.getElementById('invoice-subtotal').textContent = `$${subtotal.toFixed(2)}`;
+    }
+    if (document.getElementById('invoice-tax-amount')) {
+        document.getElementById('invoice-tax-amount').textContent = `$${taxAmount.toFixed(2)}`;
+    }
+    document.getElementById('invoice-total-amount').textContent = `$${total.toFixed(2)}`;
 }
 
 async function createInvoice(e) {
@@ -315,26 +421,37 @@ async function createInvoice(e) {
     });
     
     try {
-        // First create a client if needed
         const clientName = document.getElementById('invoice-client').value;
+        console.log('Creating/finding client:', clientName);
         let clientId = await getOrCreateClient(clientName);
+        console.log('Client ID:', clientId);
+        
+        const subtotal = items.reduce((sum, item) => sum + item.amount, 0);
+        const taxPercent = parseFloat(document.getElementById('invoice-tax').value) || 0;
+        const taxAmount = (subtotal * taxPercent) / 100;
+        const discount = parseFloat(document.getElementById('invoice-discount').value) || 0;
+        
+        const invoiceData = {
+            client_id: clientId,
+            items: items,
+            due_date: new Date(document.getElementById('invoice-due').value).toISOString(),
+            tax: taxAmount,
+            discount: discount,
+            currency: document.getElementById('invoice-currency').value,
+            notes: document.getElementById('invoice-notes').value || null,
+            payment_terms: document.getElementById('invoice-payment-terms').value
+        };
+        
+        console.log('Creating invoice with data:', invoiceData);
         
         await apiRequest('/invoices', {
             method: 'POST',
-            body: JSON.stringify({
-                client_id: clientId,
-                items: items,
-                due_date: new Date(document.getElementById('invoice-due').value).toISOString(),
-                tax: 0,
-                discount: 0,
-                currency: 'USD',
-                notes: null,
-                payment_terms: null
-            })
+            body: JSON.stringify(invoiceData)
         });
         closeModal();
         loadInvoices();
     } catch (error) {
+        console.error('Invoice creation error:', error);
         alert('Error creating invoice: ' + error.message);
     }
 }
@@ -344,7 +461,11 @@ async function getOrCreateClient(name) {
         // Try to find existing client
         const clients = await apiRequest('/clients');
         const existing = clients.find(c => c.name.toLowerCase() === name.toLowerCase());
-        if (existing) return existing._id;
+        if (existing) {
+            const id = extractId(existing._id);
+            console.log('Found existing client, ID:', id);
+            return id;
+        }
         
         // Create new client
         const newClient = await apiRequest('/clients', {
@@ -357,14 +478,100 @@ async function getOrCreateClient(name) {
                 address: null
             })
         });
-        return newClient._id;
+        
+        const id = extractId(newClient._id);
+        console.log('Created new client, ID:', id);
+        return id;
     } catch (error) {
-        throw new Error('Failed to create client');
+        console.error('Client creation error:', error);
+        throw new Error('Failed to create client: ' + error.message);
     }
 }
 
-function viewInvoice(id) { alert('View invoice: ' + id); }
-function downloadInvoice(id) { alert('Download PDF for invoice: ' + id); }
+async function viewInvoice(id) {
+    try {
+        const invoice = await apiRequest(`/invoices/${id}`);
+        const currency = invoice.currency || 'USD';
+        const symbol = currency === 'USD' ? '$' : currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : 'KSh';
+        
+        const itemsHTML = invoice.items.map(item => `
+            <tr>
+                <td>${item.description}</td>
+                <td>${item.quantity}</td>
+                <td>${symbol}${item.rate.toFixed(2)}</td>
+                <td>${symbol}${item.amount.toFixed(2)}</td>
+            </tr>
+        `).join('');
+        
+        createModal(`Invoice #${invoice.invoice_number}`, `
+            <div class="invoice-view">
+                <div class="invoice-header">
+                    <h3>Invoice #${invoice.invoice_number}</h3>
+                    <span class="status-badge status-${invoice.status}">${invoice.status}</span>
+                </div>
+                <div class="invoice-details">
+                    <p><strong>Issue Date:</strong> ${new Date(invoice.date).toLocaleDateString()}</p>
+                    <p><strong>Due Date:</strong> ${new Date(invoice.due_date).toLocaleDateString()}</p>
+                    <p><strong>Payment Terms:</strong> ${invoice.payment_terms || 'N/A'}</p>
+                </div>
+                <table class="invoice-table">
+                    <thead>
+                        <tr>
+                            <th>Description</th>
+                            <th>Qty</th>
+                            <th>Rate</th>
+                            <th>Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${itemsHTML}
+                    </tbody>
+                </table>
+                <div class="invoice-totals">
+                    <div class="total-row"><span>Subtotal:</span><span>${symbol}${invoice.subtotal.toFixed(2)}</span></div>
+                    <div class="total-row"><span>Tax:</span><span>${symbol}${invoice.tax.toFixed(2)}</span></div>
+                    <div class="total-row"><span>Discount:</span><span>-${symbol}${invoice.discount.toFixed(2)}</span></div>
+                    <div class="total-row total"><span>Total:</span><span>${symbol}${invoice.total.toFixed(2)}</span></div>
+                </div>
+                ${invoice.notes ? `<div class="invoice-notes"><p><strong>Notes:</strong> ${invoice.notes}</p></div>` : ''}
+            </div>
+        `);
+    } catch (error) {
+        alert('Error loading invoice: ' + error.message);
+    }
+}
+
+async function updateInvoiceStatus(id) {
+    const status = prompt('Enter new status (draft, sent, paid, overdue):', 'sent');
+    if (!status) return;
+    
+    const validStatuses = ['draft', 'sent', 'paid', 'overdue'];
+    if (!validStatuses.includes(status.toLowerCase())) {
+        alert('Invalid status. Use: draft, sent, paid, or overdue');
+        return;
+    }
+    
+    try {
+        await apiRequest(`/invoices/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify({ status: status.toLowerCase() })
+        });
+        loadInvoices();
+    } catch (error) {
+        alert('Error updating status: ' + error.message);
+    }
+}
+
+function downloadInvoicePDF(id) {
+    alert('PDF Generation: This feature requires a PDF library.\n\nTo implement:\n1. Install jsPDF or PDFKit\n2. Create invoice template\n3. Generate and download PDF\n\nFor now, use the View button to see invoice details.');
+}
+
+function emailInvoice(id) {
+    const email = prompt('Enter client email address:');
+    if (!email) return;
+    
+    alert(`Email Sending: This feature requires email service integration.\n\nTo implement:\n1. Set up email service (SendGrid, AWS SES, etc.)\n2. Create email template\n3. Send invoice as PDF attachment\n\nEmail would be sent to: ${email}`);
+}
 
 // TOOL 2: AI Writing Assistant
 async function generateAIContent() {
@@ -406,19 +613,22 @@ async function loadContracts() {
             return;
         }
         
-        container.innerHTML = contracts.map(contract => `
-            <div class="list-item">
-                <div class="item-info">
-                    <h3>${contract.title}</h3>
-                    <p>${contract.type} • Created: ${new Date(contract.created_at).toLocaleDateString()}</p>
-                    <span class="status-badge status-${contract.status}">${contract.status}</span>
+        container.innerHTML = contracts.map(contract => {
+            const contractId = extractId(contract._id);
+            return `
+                <div class="list-item">
+                    <div class="item-info">
+                        <h3>${contract.title}</h3>
+                        <p>${contract.type} • Created: ${new Date(contract.created_at).toLocaleDateString()}</p>
+                        <span class="status-badge status-${contract.status}">${contract.status}</span>
+                    </div>
+                    <div class="item-actions">
+                        <button class="btn btn-small btn-primary" onclick="viewContract('${contractId}')">View</button>
+                        <button class="btn btn-small btn-secondary" onclick="downloadContract('${contractId}')">Download</button>
+                    </div>
                 </div>
-                <div class="item-actions">
-                    <button class="btn btn-small btn-primary" onclick="viewContract('${contract._id}')">View</button>
-                    <button class="btn btn-small btn-secondary" onclick="downloadContract('${contract._id}')">Download</button>
-                </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
     } catch (error) {
         container.innerHTML = '<div class="empty-state">Error loading contracts</div>';
     }
@@ -681,6 +891,7 @@ function filterTimeEntries() {
     }
     
     container.innerHTML = filtered.map(entry => {
+        const entryId = extractId(entry._id);
         const hours = entry.duration ? (entry.duration / 3600).toFixed(2) : '0.00';
         const date = new Date(entry.start_time).toLocaleDateString();
         const billableBadge = entry.is_billable ? 
@@ -696,8 +907,8 @@ function filterTimeEntries() {
                     <p>${hours} hours • ${date} • ${billableBadge} • Earnings: ${earnings}</p>
                 </div>
                 <div class="time-entry-actions">
-                    <button class="btn btn-small btn-edit" onclick="editTimeEntry('${entry._id}')">Edit</button>
-                    <button class="btn btn-small btn-secondary" onclick="deleteTimeEntry('${entry._id}')">Delete</button>
+                    <button class="btn btn-small btn-edit" onclick="editTimeEntry('${entryId}')">Edit</button>
+                    <button class="btn btn-small btn-secondary" onclick="deleteTimeEntry('${entryId}')">Delete</button>
                 </div>
             </div>
         `;
@@ -762,7 +973,7 @@ function showAddTimeEntryModal() {
 }
 
 function editTimeEntry(id) {
-    const entry = currentFilteredEntries.find(e => e._id === id);
+    const entry = currentFilteredEntries.find(e => extractId(e._id) === id);
     if (!entry) return;
     
     const hours = entry.duration ? (entry.duration / 3600).toFixed(2) : '0';
@@ -943,18 +1154,21 @@ async function loadResumes() {
             return;
         }
         
-        container.innerHTML = resumes.map(resume => `
-            <div class="list-item">
-                <div class="item-info">
-                    <h3>${resume.title}</h3>
-                    <p>${resume.name} • Updated: ${new Date(resume.updated_at).toLocaleDateString()}</p>
+        container.innerHTML = resumes.map(resume => {
+            const resumeId = extractId(resume._id);
+            return `
+                <div class="list-item">
+                    <div class="item-info">
+                        <h3>${resume.title}</h3>
+                        <p>${resume.name} • Updated: ${new Date(resume.updated_at).toLocaleDateString()}</p>
+                    </div>
+                    <div class="item-actions">
+                        <button class="btn btn-small btn-primary" onclick="editResume('${resumeId}')">Edit</button>
+                        <button class="btn btn-small btn-secondary" onclick="downloadResume('${resumeId}')">Download PDF</button>
+                    </div>
                 </div>
-                <div class="item-actions">
-                    <button class="btn btn-small btn-primary" onclick="editResume('${resume._id}')">Edit</button>
-                    <button class="btn btn-small btn-secondary" onclick="downloadResume('${resume._id}')">Download PDF</button>
-                </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
     } catch (error) {
         container.innerHTML = '<div class="empty-state">Error loading resumes</div>';
     }
