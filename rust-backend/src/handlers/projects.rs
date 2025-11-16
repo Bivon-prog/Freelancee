@@ -44,8 +44,11 @@ async fn create_project(
     Extension(auth_user): Extension<AuthUser>,
     Json(payload): Json<CreateProjectRequest>,
 ) -> Result<Json<Project>> {
-    let client_id = ObjectId::parse_str(&payload.client_id)
-        .map_err(|_| AppError::BadRequest("Invalid client ID".to_string()))?;
+    let client_id = match payload.client_id {
+        Some(id) => Some(ObjectId::parse_str(&id)
+            .map_err(|_| AppError::BadRequest("Invalid client ID".to_string()))?),
+        None => None,
+    };
 
     let project = Project {
         id: None,

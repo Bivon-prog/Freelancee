@@ -181,16 +181,62 @@
                 <section id="time-tracking-section" class="section">
                     <div class="section-header">
                         <h2>⏱️ Time Tracking & Billing</h2>
-                        <button class="btn btn-primary" onclick="showAddTimeEntryModal()">Log Time</button>
+                        <div class="header-actions">
+                            <button class="btn btn-primary" onclick="showAddTimeEntryModal()">Log Time</button>
+                            <button class="btn btn-secondary" onclick="generateInvoiceFromTime()">Generate Invoice</button>
+                            <button class="btn btn-secondary" onclick="exportTimeEntries()">Export CSV</button>
+                        </div>
                     </div>
+                    
                     <div class="timer-widget">
                         <div class="timer-display" id="timer-display">00:00:00</div>
                         <div class="timer-controls">
                             <button class="btn btn-primary" id="timer-start" onclick="startTimer()">Start Timer</button>
                             <button class="btn btn-secondary" id="timer-stop" onclick="stopTimer()" style="display:none;">Stop Timer</button>
                         </div>
-                        <input type="text" id="timer-description" placeholder="What are you working on?" class="form-control">
+                        <div class="timer-inputs">
+                            <input type="text" id="timer-description" placeholder="What are you working on?" class="form-control">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="timer-billable" checked> Billable
+                            </label>
+                            <input type="number" id="timer-rate" placeholder="Hourly rate ($)" class="form-control" step="0.01">
+                        </div>
                     </div>
+                    
+                    <div class="time-filters">
+                        <h3>Filters & Reports</h3>
+                        <div class="filter-row">
+                            <select id="time-filter-period" class="form-control" onchange="filterTimeEntries()">
+                                <option value="all">All Time</option>
+                                <option value="today">Today</option>
+                                <option value="week">This Week</option>
+                                <option value="month" selected>This Month</option>
+                                <option value="custom">Custom Range</option>
+                            </select>
+                            <input type="date" id="time-filter-start" class="form-control" style="display:none;" onchange="filterTimeEntries()">
+                            <input type="date" id="time-filter-end" class="form-control" style="display:none;" onchange="filterTimeEntries()">
+                            <select id="time-filter-billable" class="form-control" onchange="filterTimeEntries()">
+                                <option value="all">All Entries</option>
+                                <option value="billable">Billable Only</option>
+                                <option value="non-billable">Non-Billable Only</option>
+                            </select>
+                        </div>
+                        <div class="time-summary">
+                            <div class="summary-card">
+                                <h4 id="total-hours">0.00</h4>
+                                <p>Total Hours</p>
+                            </div>
+                            <div class="summary-card">
+                                <h4 id="billable-hours">0.00</h4>
+                                <p>Billable Hours</p>
+                            </div>
+                            <div class="summary-card">
+                                <h4 id="total-earnings">$0.00</h4>
+                                <p>Total Earnings</p>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div id="time-entries-list" class="list-container"></div>
                 </section>
 

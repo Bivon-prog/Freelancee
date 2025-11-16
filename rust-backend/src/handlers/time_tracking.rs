@@ -45,8 +45,11 @@ async fn create_time_entry(
     Extension(auth_user): Extension<AuthUser>,
     Json(payload): Json<CreateTimeEntryRequest>,
 ) -> Result<Json<TimeEntry>> {
-    let project_id = ObjectId::parse_str(&payload.project_id)
-        .map_err(|_| AppError::BadRequest("Invalid project ID".to_string()))?;
+    let project_id = match payload.project_id {
+        Some(id) => Some(ObjectId::parse_str(&id)
+            .map_err(|_| AppError::BadRequest("Invalid project ID".to_string()))?),
+        None => None,
+    };
 
     let entry = TimeEntry {
         id: None,

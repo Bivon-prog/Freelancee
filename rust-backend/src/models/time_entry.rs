@@ -7,7 +7,8 @@ pub struct TimeEntry {
     #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
     pub id: Option<ObjectId>,
     pub user_id: ObjectId,
-    pub project_id: ObjectId,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub project_id: Option<ObjectId>,
     pub description: String,
     pub start_time: DateTime<Utc>,
     pub end_time: Option<DateTime<Utc>>,
@@ -20,7 +21,7 @@ pub struct TimeEntry {
 
 #[derive(Debug, Deserialize)]
 pub struct CreateTimeEntryRequest {
-    pub project_id: String,
+    pub project_id: Option<String>,
     pub description: String,
     pub start_time: DateTime<Utc>,
     pub is_billable: Option<bool>,

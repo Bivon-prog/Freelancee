@@ -676,3 +676,103 @@ body {
         grid-template-columns: 1fr;
     }
 }
+
+/* Time Tracking Enhancements */
+.header-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.timer-inputs {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-top: 15px;
+}
+
+.timer-inputs .form-control {
+    flex: 1;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+    font-size: 14px;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.time-filters {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+.time-filters h3 {
+    margin-bottom: 15px;
+    color: #333;
+}
+
+.filter-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.filter-row .form-control {
+    flex: 1;
+}
+
+.time-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+}
+
+.summary-card {
+    background: #f9fafb;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+    border-left: 4px solid #4f46e5;
+}
+
+.summary-card h4 {
+    font-size: 28px;
+    color: #4f46e5;
+    margin-bottom: 5px;
+}
+
+.summary-card p {
+    color: #666;
+    font-size: 14px;
+    margin: 0;
+}
+
+/* Edit time entry modal */
+.time-entry-actions {
+    display: flex;
+    gap: 5px;
+}
+
+.btn-edit {
+    background: #3b82f6;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.btn-edit:hover {
+    background: #2563eb;
+}

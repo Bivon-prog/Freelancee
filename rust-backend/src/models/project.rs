@@ -7,7 +7,8 @@ pub struct Project {
     #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
     pub id: Option<ObjectId>,
     pub user_id: ObjectId,
-    pub client_id: ObjectId,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub client_id: Option<ObjectId>,
     pub name: String,
     pub description: Option<String>,
     pub status: ProjectStatus,
@@ -30,7 +31,7 @@ pub enum ProjectStatus {
 
 #[derive(Debug, Deserialize)]
 pub struct CreateProjectRequest {
-    pub client_id: String,
+    pub client_id: Option<String>,
     pub name: String,
     pub description: Option<String>,
     pub hourly_rate: Option<f64>,

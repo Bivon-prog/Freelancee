@@ -500,6 +500,8 @@ function viewContract(id) { alert('View contract: ' + id); }
 function downloadContract(id) { alert('Download contract: ' + id); }
 
 // TOOL 4: Time Tracking
+let currentFilteredEntries = [];
+
 function startTimer() {
     const description = document.getElementById('timer-description').value;
     if (!description.trim()) {
@@ -511,6 +513,8 @@ function startTimer() {
     document.getElementById('timer-start').style.display = 'none';
     document.getElementById('timer-stop').style.display = 'inline-block';
     document.getElementById('timer-description').disabled = true;
+    document.getElementById('timer-billable').disabled = true;
+    document.getElementById('timer-rate').disabled = true;
     
     timerInterval = setInterval(() => {
         timerSeconds++;
@@ -523,15 +527,20 @@ function stopTimer() {
     document.getElementById('timer-start').style.display = 'inline-block';
     document.getElementById('timer-stop').style.display = 'none';
     document.getElementById('timer-description').disabled = false;
+    document.getElementById('timer-billable').disabled = false;
+    document.getElementById('timer-rate').disabled = false;
     
     const hours = (timerSeconds / 3600).toFixed(2);
     const description = document.getElementById('timer-description').value;
+    const isBillable = document.getElementById('timer-billable').checked;
+    const rate = parseFloat(document.getElementById('timer-rate').value) || null;
     
-    saveTimeEntry(description, hours);
+    saveTimeEntry(description, hours, isBillable, rate);
     
     timerSeconds = 0;
     updateTimerDisplay();
     document.getElementById('timer-description').value = '';
+    document.getElementById('timer-rate').value = '';
 }
 
 function updateTimerDisplay() {
@@ -543,25 +552,22 @@ function updateTimerDisplay() {
         `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
-async function saveTimeEntry(description, hours) {
+async function saveTimeEntry(description, hours, isBillable = true, rate = null) {
     try {
-        // Get or create a default project
-        const projectId = await getOrCreateDefaultProject();
         const now = new Date();
-        const startTime = new Date(now.getTime() - (hours * 3600000)); // hours ago
+        const startTime = new Date(now.getTime() - (hours * 3600000));
         
         await apiRequest('/time-tracking', {
             method: 'POST',
             body: JSON.stringify({
-                project_id: projectId,
+                project_id: null,
                 description,
                 start_time: startTime.toISOString(),
-                is_billable: true,
-                hourly_rate: null
+                is_billable: isBillable,
+                hourly_rate: rate
             })
         });
         
-        // Get the created entry and stop it
         const entries = await apiRequest('/time-tracking');
         const latestEntry = entries[entries.length - 1];
         if (latestEntry && !latestEntry.end_time) {
@@ -608,30 +614,111 @@ async function loadTimeEntries() {
     
     try {
         const entries = await apiRequest('/time-tracking');
+        currentFilteredEntries = entries;
         
         if (entries.length === 0) {
             container.innerHTML = '<div class="empty-state">No time entries yet. Start tracking your time!</div>';
+            updateTimeSummary([]);
             return;
         }
         
-        container.innerHTML = entries.map(entry => {
-            const hours = entry.duration ? (entry.duration / 3600).toFixed(2) : '0.00';
-            const date = new Date(entry.start_time).toLocaleDateString();
-            return `
-                <div class="list-item">
-                    <div class="item-info">
-                        <h3>${entry.description}</h3>
-                        <p>${hours} hours • ${date}</p>
-                    </div>
-                    <div class="item-actions">
-                        <button class="btn btn-small btn-secondary" onclick="deleteTimeEntry('${entry._id}')">Delete</button>
-                    </div>
-                </div>
-            `;
-        }).join('');
+        filterTimeEntries();
     } catch (error) {
         container.innerHTML = '<div class="empty-state">Error loading time entries</div>';
     }
+}
+
+function filterTimeEntries() {
+    const period = document.getElementById('time-filter-period').value;
+    const billableFilter = document.getElementById('time-filter-billable').value;
+    const container = document.getElementById('time-entries-list');
+    
+    // Show/hide custom date inputs
+    const showCustom = period === 'custom';
+    document.getElementById('time-filter-start').style.display = showCustom ? 'block' : 'none';
+    document.getElementById('time-filter-end').style.display = showCustom ? 'block' : 'none';
+    
+    let filtered = [...currentFilteredEntries];
+    
+    // Filter by period
+    const now = new Date();
+    if (period === 'today') {
+        filtered = filtered.filter(e => {
+            const date = new Date(e.start_time);
+            return date.toDateString() === now.toDateString();
+        });
+    } else if (period === 'week') {
+        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        filtered = filtered.filter(e => new Date(e.start_time) >= weekAgo);
+    } else if (period === 'month') {
+        filtered = filtered.filter(e => {
+            const date = new Date(e.start_time);
+            return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+        });
+    } else if (period === 'custom') {
+        const start = document.getElementById('time-filter-start').value;
+        const end = document.getElementById('time-filter-end').value;
+        if (start && end) {
+            filtered = filtered.filter(e => {
+                const date = new Date(e.start_time);
+                return date >= new Date(start) && date <= new Date(end);
+            });
+        }
+    }
+    
+    // Filter by billable
+    if (billableFilter === 'billable') {
+        filtered = filtered.filter(e => e.is_billable);
+    } else if (billableFilter === 'non-billable') {
+        filtered = filtered.filter(e => !e.is_billable);
+    }
+    
+    // Display entries
+    if (filtered.length === 0) {
+        container.innerHTML = '<div class="empty-state">No entries match the selected filters</div>';
+        updateTimeSummary([]);
+        return;
+    }
+    
+    container.innerHTML = filtered.map(entry => {
+        const hours = entry.duration ? (entry.duration / 3600).toFixed(2) : '0.00';
+        const date = new Date(entry.start_time).toLocaleDateString();
+        const billableBadge = entry.is_billable ? 
+            '<span class="status-badge status-active">Billable</span>' : 
+            '<span class="status-badge">Non-billable</span>';
+        const earnings = entry.is_billable && entry.hourly_rate ? 
+            `$${(hours * entry.hourly_rate).toFixed(2)}` : '-';
+        
+        return `
+            <div class="list-item">
+                <div class="item-info">
+                    <h3>${entry.description}</h3>
+                    <p>${hours} hours • ${date} • ${billableBadge} • Earnings: ${earnings}</p>
+                </div>
+                <div class="time-entry-actions">
+                    <button class="btn btn-small btn-edit" onclick="editTimeEntry('${entry._id}')">Edit</button>
+                    <button class="btn btn-small btn-secondary" onclick="deleteTimeEntry('${entry._id}')">Delete</button>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    updateTimeSummary(filtered);
+}
+
+function updateTimeSummary(entries) {
+    const totalHours = entries.reduce((sum, e) => sum + (e.duration ? e.duration / 3600 : 0), 0);
+    const billableHours = entries.filter(e => e.is_billable).reduce((sum, e) => sum + (e.duration ? e.duration / 3600 : 0), 0);
+    const totalEarnings = entries.reduce((sum, e) => {
+        if (e.is_billable && e.hourly_rate && e.duration) {
+            return sum + ((e.duration / 3600) * e.hourly_rate);
+        }
+        return sum;
+    }, 0);
+    
+    document.getElementById('total-hours').textContent = totalHours.toFixed(2);
+    document.getElementById('billable-hours').textContent = billableHours.toFixed(2);
+    document.getElementById('total-earnings').textContent = `$${totalEarnings.toFixed(2)}`;
 }
 
 function showAddTimeEntryModal() {
@@ -649,6 +736,15 @@ function showAddTimeEntryModal() {
                 <label>Date</label>
                 <input type="date" id="time-date" value="${new Date().toISOString().split('T')[0]}" required>
             </div>
+            <div class="form-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="manual-time-billable" checked> Billable
+                </label>
+            </div>
+            <div class="form-group">
+                <label>Hourly Rate ($)</label>
+                <input type="number" id="manual-time-rate" step="0.01" placeholder="Optional">
+            </div>
             <button type="submit" class="btn btn-primary">Log Time</button>
         </form>
     `);
@@ -657,9 +753,71 @@ function showAddTimeEntryModal() {
         e.preventDefault();
         await saveTimeEntry(
             document.getElementById('time-description').value,
-            document.getElementById('time-hours').value
+            document.getElementById('time-hours').value,
+            document.getElementById('manual-time-billable').checked,
+            parseFloat(document.getElementById('manual-time-rate').value) || null
         );
         closeModal();
+    });
+}
+
+function editTimeEntry(id) {
+    const entry = currentFilteredEntries.find(e => e._id === id);
+    if (!entry) return;
+    
+    const hours = entry.duration ? (entry.duration / 3600).toFixed(2) : '0';
+    const date = new Date(entry.start_time).toISOString().split('T')[0];
+    
+    const modal = createModal('Edit Time Entry', `
+        <form id="edit-time-form" class="auth-form">
+            <div class="form-group">
+                <label>Description</label>
+                <input type="text" id="edit-time-description" value="${entry.description}" required>
+            </div>
+            <div class="form-group">
+                <label>Hours</label>
+                <input type="number" id="edit-time-hours" value="${hours}" step="0.25" required>
+            </div>
+            <div class="form-group">
+                <label>Date</label>
+                <input type="date" id="edit-time-date" value="${date}" required>
+            </div>
+            <div class="form-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="edit-time-billable" ${entry.is_billable ? 'checked' : ''}> Billable
+                </label>
+            </div>
+            <div class="form-group">
+                <label>Hourly Rate ($)</label>
+                <input type="number" id="edit-time-rate" value="${entry.hourly_rate || ''}" step="0.01">
+            </div>
+            <button type="submit" class="btn btn-primary">Update Entry</button>
+        </form>
+    `);
+    
+    document.getElementById('edit-time-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        try {
+            const hours = parseFloat(document.getElementById('edit-time-hours').value);
+            const date = new Date(document.getElementById('edit-time-date').value);
+            const startTime = new Date(date.getTime());
+            const endTime = new Date(date.getTime() + (hours * 3600000));
+            
+            await apiRequest(`/time-tracking/${id}`, {
+                method: 'PUT',
+                body: JSON.stringify({
+                    description: document.getElementById('edit-time-description').value,
+                    start_time: startTime.toISOString(),
+                    end_time: endTime.toISOString(),
+                    is_billable: document.getElementById('edit-time-billable').checked,
+                    hourly_rate: parseFloat(document.getElementById('edit-time-rate').value) || null
+                })
+            });
+            closeModal();
+            loadTimeEntries();
+        } catch (error) {
+            alert('Error updating entry: ' + error.message);
+        }
     });
 }
 
@@ -672,6 +830,104 @@ async function deleteTimeEntry(id) {
             alert('Error deleting entry');
         }
     }
+}
+
+async function generateInvoiceFromTime() {
+    const billableFilter = document.getElementById('time-filter-billable');
+    const originalValue = billableFilter.value;
+    billableFilter.value = 'billable';
+    filterTimeEntries();
+    
+    const billableEntries = currentFilteredEntries.filter(e => e.is_billable);
+    
+    if (billableEntries.length === 0) {
+        alert('No billable time entries found for the selected period');
+        billableFilter.value = originalValue;
+        filterTimeEntries();
+        return;
+    }
+    
+    const totalHours = billableEntries.reduce((sum, e) => sum + (e.duration ? e.duration / 3600 : 0), 0);
+    const totalAmount = billableEntries.reduce((sum, e) => {
+        if (e.hourly_rate && e.duration) {
+            return sum + ((e.duration / 3600) * e.hourly_rate);
+        }
+        return sum;
+    }, 0);
+    
+    if (confirm(`Generate invoice for ${totalHours.toFixed(2)} billable hours ($${totalAmount.toFixed(2)})?`)) {
+        try {
+            const clientName = prompt('Enter client name:', 'Client');
+            if (!clientName) return;
+            
+            const clientId = await getOrCreateClient(clientName);
+            const items = [{
+                description: `Time tracking services (${totalHours.toFixed(2)} hours)`,
+                quantity: totalHours,
+                rate: totalAmount / totalHours,
+                amount: totalAmount
+            }];
+            
+            await apiRequest('/invoices', {
+                method: 'POST',
+                body: JSON.stringify({
+                    client_id: clientId,
+                    items: items,
+                    due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+                    tax: 0,
+                    discount: 0,
+                    currency: 'USD',
+                    notes: 'Generated from time tracking entries',
+                    payment_terms: 'Net 30'
+                })
+            });
+            
+            alert('Invoice created successfully!');
+            showSection('invoices');
+        } catch (error) {
+            alert('Error creating invoice: ' + error.message);
+        }
+    }
+    
+    billableFilter.value = originalValue;
+    filterTimeEntries();
+}
+
+function exportTimeEntries() {
+    const entries = currentFilteredEntries;
+    if (entries.length === 0) {
+        alert('No entries to export');
+        return;
+    }
+    
+    // Create CSV content
+    const headers = ['Date', 'Description', 'Hours', 'Billable', 'Rate', 'Earnings'];
+    const rows = entries.map(entry => {
+        const hours = entry.duration ? (entry.duration / 3600).toFixed(2) : '0.00';
+        const date = new Date(entry.start_time).toLocaleDateString();
+        const billable = entry.is_billable ? 'Yes' : 'No';
+        const rate = entry.hourly_rate || '0.00';
+        const earnings = entry.is_billable && entry.hourly_rate ? 
+            (hours * entry.hourly_rate).toFixed(2) : '0.00';
+        
+        return [date, entry.description, hours, billable, rate, earnings];
+    });
+    
+    const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+    
+    // Download CSV
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `time-entries-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
 }
 
 // TOOL 5: Resume Builder
