@@ -615,11 +615,12 @@ async function loadContracts() {
         
         container.innerHTML = contracts.map(contract => {
             const contractId = extractId(contract._id);
+            const value = contract.value ? `$${contract.value}` : 'N/A';
             return `
                 <div class="list-item">
                     <div class="item-info">
                         <h3>${contract.title}</h3>
-                        <p>${contract.type} • Created: ${new Date(contract.created_at).toLocaleDateString()}</p>
+                        <p>Value: ${value} • Created: ${new Date(contract.created_at).toLocaleDateString()}</p>
                         <span class="status-badge status-${contract.status}">${contract.status}</span>
                     </div>
                     <div class="item-actions">
@@ -630,7 +631,8 @@ async function loadContracts() {
             `;
         }).join('');
     } catch (error) {
-        container.innerHTML = '<div class="empty-state">Error loading contracts</div>';
+        console.error('Error loading contracts:', error);
+        container.innerHTML = `<div class="empty-state">Error loading contracts: ${error.message}</div>`;
     }
 }
 
@@ -639,13 +641,16 @@ function showCreateContractModal() {
         <form id="create-contract-form" class="contract-editor">
             <div class="form-group">
                 <label>Contract Type</label>
-                <select id="contract-type" class="form-control">
+                <select id="contract-type" class="form-control" onchange="showContractTypeInfo()">
                     <option value="freelance">Freelance Contract</option>
                     <option value="employment">Employment Agreement</option>
                     <option value="partnership">Partnership Agreement</option>
                     <option value="service">Service Agreement</option>
-                    <option value="nda">Non-Disclosure Agreement</option>
+                    <option value="nda">Non-Disclosure Agreement (NDA)</option>
                 </select>
+                <div id="contract-type-info" style="margin-top: 10px; padding: 10px; background: #f0f9ff; border-left: 3px solid #3b82f6; font-size: 13px; color: #1e40af;">
+                    <strong>Freelance Contract:</strong> For independent contractors providing services to clients. Includes terms for services, payment, IP rights, and termination.
+                </div>
             </div>
             <div class="form-group">
                 <label>Contract Title</label>
@@ -675,28 +680,93 @@ function showCreateContractModal() {
                     <input type="text" id="contract-duration" class="form-control" placeholder="e.g., 3 months">
                 </div>
             </div>
-            <button type="submit" class="btn btn-primary">Generate Contract</button>
+            <div style="display: flex; gap: 10px;">
+                <button type="button" class="btn btn-secondary" onclick="previewContract()">Preview Contract</button>
+                <button type="submit" class="btn btn-primary">Generate & Save Contract</button>
+            </div>
         </form>
+        <div id="contract-preview" style="display: none; margin-top: 20px;">
+            <h4>Contract Preview:</h4>
+            <div class="contract-document" id="preview-content"></div>
+        </div>
     `);
     
     document.getElementById('create-contract-form').addEventListener('submit', createContract);
+}
+
+function showContractTypeInfo() {
+    const type = document.getElementById('contract-type').value;
+    const infoDiv = document.getElementById('contract-type-info');
+    
+    const descriptions = {
+        freelance: '<strong>Freelance Contract:</strong> For independent contractors providing services to clients. Includes terms for services, payment, IP rights, and termination.',
+        employment: '<strong>Employment Agreement:</strong> For hiring employees. Covers position, salary, benefits, confidentiality, non-compete, and termination terms.',
+        partnership: '<strong>Partnership Agreement:</strong> For business partnerships. Defines capital contributions, profit sharing, management rights, and dissolution terms.',
+        service: '<strong>Service Agreement:</strong> For service providers. Outlines services, fees, standards, warranties, liability, and dispute resolution.',
+        nda: '<strong>Non-Disclosure Agreement:</strong> For protecting confidential information. Defines what\'s confidential, obligations, term, and exclusions.'
+    };
+    
+    infoDiv.innerHTML = descriptions[type];
+}
+
+function previewContract() {
+    const contractData = {
+        type: document.getElementById('contract-type').value,
+        title: document.getElementById('contract-title').value,
+        party_a: document.getElementById('contract-party-a').value,
+        party_b: document.getElementById('contract-party-b').value,
+        scope: document.getElementById('contract-scope').value,
+        amount: document.getElementById('contract-amount').value,
+        duration: document.getElementById('contract-duration').value
+    };
+    
+    // Validate required fields
+    if (!contractData.party_a || !contractData.party_b || !contractData.scope) {
+        alert('Please fill in Party A, Party B, and Scope of Work to preview');
+        return;
+    }
+    
+    // Generate preview
+    const contractDocument = CONTRACT_TEMPLATES[contractData.type](contractData);
+    
+    // Show preview
+    document.getElementById('contract-preview').style.display = 'block';
+    document.getElementById('preview-content').innerHTML = contractDocument.replace(/\n/g, '<br>');
+    
+    // Scroll to preview
+    document.getElementById('contract-preview').scrollIntoView({ behavior: 'smooth' });
 }
 
 async function createContract(e) {
     e.preventDefault();
     
     try {
+        const contractData = {
+            type: document.getElementById('contract-type').value,
+            title: document.getElementById('contract-title').value,
+            party_a: document.getElementById('contract-party-a').value,
+            party_b: document.getElementById('contract-party-b').value,
+            scope: document.getElementById('contract-scope').value,
+            amount: document.getElementById('contract-amount').value,
+            duration: document.getElementById('contract-duration').value
+        };
+        
+        // Generate contract document from template
+        const contractDocument = CONTRACT_TEMPLATES[contractData.type](contractData);
+        
+        // Get or create client
+        const clientId = await getOrCreateClient(contractData.party_b);
+        
         await apiRequest('/contracts', {
             method: 'POST',
             body: JSON.stringify({
-                type: document.getElementById('contract-type').value,
-                title: document.getElementById('contract-title').value,
-                party_a: document.getElementById('contract-party-a').value,
-                party_b: document.getElementById('contract-party-b').value,
-                scope: document.getElementById('contract-scope').value,
-                amount: document.getElementById('contract-amount').value,
-                duration: document.getElementById('contract-duration').value,
-                status: 'draft'
+                client_id: clientId,
+                title: contractData.title,
+                content: contractDocument,
+                start_date: new Date().toISOString(),
+                end_date: null,
+                value: parseFloat(contractData.amount) || null,
+                currency: 'USD'
             })
         });
         closeModal();
@@ -706,8 +776,75 @@ async function createContract(e) {
     }
 }
 
-function viewContract(id) { alert('View contract: ' + id); }
-function downloadContract(id) { alert('Download contract: ' + id); }
+async function viewContract(id) {
+    try {
+        const contract = await apiRequest(`/contracts/${id}`);
+        
+        // Determine contract type from content
+        let contractType = 'Contract';
+        if (contract.content) {
+            if (contract.content.includes('FREELANCE')) contractType = 'Freelance Agreement';
+            else if (contract.content.includes('EMPLOYMENT')) contractType = 'Employment Agreement';
+            else if (contract.content.includes('PARTNERSHIP')) contractType = 'Partnership Agreement';
+            else if (contract.content.includes('SERVICE AGREEMENT')) contractType = 'Service Agreement';
+            else if (contract.content.includes('NON-DISCLOSURE')) contractType = 'Non-Disclosure Agreement';
+        }
+        
+        createModal(`${contract.title}`, `
+            <div class="contract-view">
+                <div class="contract-header">
+                    <div>
+                        <h3>${contract.title}</h3>
+                        <p><strong>Type:</strong> ${contractType}</p>
+                        <p><strong>Created:</strong> ${new Date(contract.created_at).toLocaleDateString()}</p>
+                        ${contract.value ? `<p><strong>Value:</strong> $${contract.value}</p>` : ''}
+                    </div>
+                    <span class="status-badge status-${contract.status}">${contract.status}</span>
+                </div>
+                <div class="contract-document">
+                    ${contract.content ? contract.content.replace(/\n/g, '<br>') : 'No document generated'}
+                </div>
+                <div class="contract-actions">
+                    <button class="btn btn-primary" onclick="downloadContractPDF('${extractId(contract._id)}')">Download PDF</button>
+                    <button class="btn btn-secondary" onclick="updateContractStatus('${extractId(contract._id)}')">Update Status</button>
+                </div>
+            </div>
+        `);
+    } catch (error) {
+        console.error('Contract view error:', error);
+        alert('Error loading contract: ' + error.message);
+    }
+}
+
+async function updateContractStatus(id) {
+    const status = prompt('Enter new status (draft, active, completed, cancelled):', 'active');
+    if (!status) return;
+    
+    const validStatuses = ['draft', 'active', 'completed', 'cancelled'];
+    if (!validStatuses.includes(status.toLowerCase())) {
+        alert('Invalid status. Use: draft, active, completed, or cancelled');
+        return;
+    }
+    
+    try {
+        await apiRequest(`/contracts/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify({ status: status.toLowerCase() })
+        });
+        closeModal();
+        loadContracts();
+    } catch (error) {
+        alert('Error updating status: ' + error.message);
+    }
+}
+
+function downloadContractPDF(id) {
+    alert('PDF Generation: This feature requires a PDF library.\n\nTo implement:\n1. Install jsPDF or PDFKit\n2. Format contract document\n3. Generate and download PDF\n\nFor now, use the View button and copy the text.');
+}
+
+function downloadContract(id) {
+    downloadContractPDF(id);
+}
 
 // TOOL 4: Time Tracking
 let currentFilteredEntries = [];
