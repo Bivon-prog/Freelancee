@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orbix - Freelancer Management</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Login Page -->
+        <div id="login-page" class="page active">
+            <div class="auth-container">
+                <h1>Orbix</h1>
+                <p class="subtitle">Smart Solutions for Your Work</p>
+                
+                <div class="auth-tabs">
+                    <button class="tab-btn active" onclick="showLogin()">Login</button>
+                    <button class="tab-btn" onclick="showRegister()">Register</button>
+                </div>
+
+                <!-- Login Form -->
+                <form id="login-form" class="auth-form">
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="login-email" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="login-password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Login</button>
+                    <div id="login-error" class="error-message"></div>
+                </form>
+
+                <!-- Register Form -->
+                <form id="register-form" class="auth-form" style="display: none;">
+                    <div class="form-group">
+                        <label>Name</label>
+                        <input type="text" id="register-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="register-email" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="register-password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Register</button>
+                    <div id="register-error" class="error-message"></div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Dashboard Page -->
+        <div id="dashboard-page" class="page">
+            <nav class="navbar">
+                <div class="nav-brand">Orbix</div>
+                <div class="nav-menu">
+                    <a href="#" onclick="showSection('overview')" class="nav-link active">Overview</a>
+                    <a href="#" onclick="showSection('invoices')" class="nav-link">💰 Invoices</a>
+                    <a href="#" onclick="showSection('ai-writer')" class="nav-link">✍️ AI Writer</a>
+                    <a href="#" onclick="showSection('contracts')" class="nav-link">📄 Contracts</a>
+                    <a href="#" onclick="showSection('time-tracking')" class="nav-link">⏱️ Time Tracking</a>
+                    <a href="#" onclick="showSection('resume-builder')" class="nav-link">📝 Resume Builder</a>
+                    <a href="#" onclick="showSection('resume-optimizer')" class="nav-link">🎯 Resume Optimizer</a>
+                </div>
+                <button class="btn btn-secondary" onclick="logout()">Logout</button>
+            </nav>
+
+            <div class="container">
+                <!-- Overview Section -->
+                <section id="overview-section" class="section active">
+                    <h2>Dashboard Overview</h2>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <h3 id="total-invoices">0</h3>
+                            <p>Total Invoices</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3 id="pending-invoices">0</h3>
+                            <p>Pending Invoices</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3 id="hours-tracked">0</h3>
+                            <p>Hours This Month</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3 id="total-resumes">0</h3>
+                            <p>Resumes Created</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3 id="total-contracts">0</h3>
+                            <p>Contracts Generated</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3 id="ai-documents">0</h3>
+                            <p>AI Documents</p>
+                        </div>
+                    </div>
+                    
+                    <div class="tools-grid">
+                        <div class="tool-card" onclick="showSection('invoices')">
+                            <div class="tool-icon">💰</div>
+                            <h3>Invoice Generator</h3>
+                            <p>Create and manage professional invoices</p>
+                        </div>
+                        <div class="tool-card" onclick="showSection('ai-writer')">
+                            <div class="tool-icon">✍️</div>
+                            <h3>AI Writing Assistant</h3>
+                            <p>AI-powered content creation and improvement</p>
+                        </div>
+                        <div class="tool-card" onclick="showSection('contracts')">
+                            <div class="tool-icon">📄</div>
+                            <h3>Contract Generator</h3>
+                            <p>Generate professional legal documents</p>
+                        </div>
+                        <div class="tool-card" onclick="showSection('time-tracking')">
+                            <div class="tool-icon">⏱️</div>
+                            <h3>Time Tracking</h3>
+                            <p>Track work hours and generate bills</p>
+                        </div>
+                        <div class="tool-card" onclick="showSection('resume-builder')">
+                            <div class="tool-icon">📝</div>
+                            <h3>Resume Builder</h3>
+                            <p>Create professional resumes and portfolios</p>
+                        </div>
+                        <div class="tool-card" onclick="showSection('resume-optimizer')">
+                            <div class="tool-icon">🎯</div>
+                            <h3>Resume Optimizer</h3>
+                            <p>Optimize resumes for job applications</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Tool 1: Invoice Generator -->
+                <section id="invoices-section" class="section">
+                    <div class="section-header">
+                        <h2>💰 Invoice Generator</h2>
+                        <button class="btn btn-primary" onclick="showCreateInvoiceModal()">Create Invoice</button>
+                    </div>
+                    <div id="invoices-list" class="list-container"></div>
+                </section>
+
+                <!-- Tool 2: AI Writing Assistant -->
+                <section id="ai-writer-section" class="section">
+                    <h2>✍️ AI Writing Assistant</h2>
+                    <div class="ai-writer-container">
+                        <div class="ai-controls">
+                            <select id="ai-task" class="form-control">
+                                <option value="write">Write Content</option>
+                                <option value="improve">Improve Text</option>
+                                <option value="summarize">Summarize</option>
+                                <option value="rewrite">Rewrite (Different Tone)</option>
+                                <option value="grammar">Fix Grammar</option>
+                            </select>
+                            <select id="ai-tone" class="form-control">
+                                <option value="professional">Professional</option>
+                                <option value="casual">Casual</option>
+                                <option value="friendly">Friendly</option>
+                                <option value="formal">Formal</option>
+                            </select>
+                        </div>
+                        <textarea id="ai-input" placeholder="Enter your text or prompt here..." rows="8"></textarea>
+                        <button class="btn btn-primary" onclick="generateAIContent()">Generate with AI</button>
+                        <div id="ai-output" class="ai-output"></div>
+                    </div>
+                </section>
+
+                <!-- Tool 3: Contract Generator -->
+                <section id="contracts-section" class="section">
+                    <div class="section-header">
+                        <h2>📄 Contract & Proposal Generator</h2>
+                        <button class="btn btn-primary" onclick="showCreateContractModal()">Create Contract</button>
+                    </div>
+                    <div id="contracts-list" class="list-container"></div>
+                </section>
+
+                <!-- Tool 4: Time Tracking -->
+                <section id="time-tracking-section" class="section">
+                    <div class="section-header">
+                        <h2>⏱️ Time Tracking & Billing</h2>
+                        <button class="btn btn-primary" onclick="showAddTimeEntryModal()">Log Time</button>
+                    </div>
+                    <div class="timer-widget">
+                        <div class="timer-display" id="timer-display">00:00:00</div>
+                        <div class="timer-controls">
+                            <button class="btn btn-primary" id="timer-start" onclick="startTimer()">Start Timer</button>
+                            <button class="btn btn-secondary" id="timer-stop" onclick="stopTimer()" style="display:none;">Stop Timer</button>
+                        </div>
+                        <input type="text" id="timer-description" placeholder="What are you working on?" class="form-control">
+                    </div>
+                    <div id="time-entries-list" class="list-container"></div>
+                </section>
+
+                <!-- Tool 5: Resume Builder -->
+                <section id="resume-builder-section" class="section">
+                    <div class="section-header">
+                        <h2>📝 Resume & Portfolio Builder</h2>
+                        <button class="btn btn-primary" onclick="showCreateResumeModal()">Create Resume</button>
+                    </div>
+                    <div id="resumes-list" class="list-container"></div>
+                </section>
+
+                <!-- Tool 6: Resume Optimizer -->
+                <section id="resume-optimizer-section" class="section">
+                    <h2>🎯 AI-Powered Resume Optimizer</h2>
+                    <div class="optimizer-container">
+                        <div class="optimizer-input">
+                            <h3>Your Resume</h3>
+                            <textarea id="resume-text" placeholder="Paste your resume text here..." rows="10"></textarea>
+                        </div>
+                        <div class="optimizer-input">
+                            <h3>Job Description (Optional)</h3>
+                            <textarea id="job-description" placeholder="Paste the job description to optimize for..." rows="10"></textarea>
+                        </div>
+                        <button class="btn btn-primary" onclick="optimizeResume()">Analyze & Optimize</button>
+                        <div id="optimization-results" class="optimization-results"></div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals will be added dynamically -->
+    <div id="modal-container"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>

@@ -43,7 +43,13 @@ impl From<bcrypt::BcryptError> for AppError {
 }
 
 impl From<jsonwebtoken::errors::Error> for AppError {
-    fn from(err: jsonwebtoken::errors::Error) -> Self {
+    fn from(_err: jsonwebtoken::errors::Error) -> Self {
         AppError::Unauthorized
+    }
+}
+
+impl From<bson::ser::Error> for AppError {
+    fn from(err: bson::ser::Error) -> Self {
+        AppError::InternalError(err.to_string())
     }
 }

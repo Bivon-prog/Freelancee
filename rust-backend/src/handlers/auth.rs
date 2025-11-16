@@ -11,7 +11,7 @@ use mongodb::bson::doc;
 
 use crate::{
     models::{User, CreateUserRequest, LoginRequest, AuthResponse},
-    middleware::Claims,
+    middleware::auth::Claims,
     error::{AppError, Result},
     AppState,
 };
